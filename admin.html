@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Slab:400,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <title>Standard User</title>
+</head>
+<style>
+    body.ynwa-page {
+        margin: 0;
+    }
+
+    header form {
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+    }
+</style>
+<body class="ynwa-page">
+    <header>
+        <a href="index.html"><img src="./images/Logo.png" alt="Computer Page Logo" class="desktop-logo"></a>
+        <a href="index.html"><img src="./images/Logo Mobile.png" alt="Mobile Page Logo" class="mobile-logo"></a>
+        <form>
+            <p id="username">Username</p>
+            <img id="user-avatar" src="#" alt="User Avatar">
+            <button><a href="index.html" class="icon-image text-dark">Log Out</a></button>
+        </form>
+    </header>
+    <body>
+        <div class="container mt-4">
+            <h2>Users List</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Email</th>
+                    </tr>
+                </thead>
+                <tbody id="user-list"></tbody>
+            </table>
+        </div>
+    <footer class="bg-primary text-dark">
+        <div class="container">
+            <div class="row">
+                <div class="col-6">
+                    <p>Follow us</p>
+                </div>
+                <div class="col-6 text-right">
+                    <a href="#"><img src="./images/facebook.png" alt="Facebook" class="img-fluid"></a>
+                    <a href="#"><img src="./images/twitter.png" alt="Twitter" class="img-fluid"></a>
+                    <a href="#"><img src="./images/instagram.png" alt="Instagram" class="img-fluid"></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            function getParameterByName(name, url) {
+                if (!url) url = window.location.href;
+                name = name.replace(/[\[\]]/g, "\\$&");
+                var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+                    results = regex.exec(url);
+                if (!results) return null;
+                if (!results[2]) return '';
+                return decodeURIComponent(results[2].replace(/\+/g, " "));
+            }
+
+            var userId = getParameterByName('userId');
+
+            var indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB || window.shimIndexedDB;
+            var database = "usersDB";
+            const DB_STORE_NAME = 'users';
+            var db;
+
+            var req = indexedDB.open(database);
+
+            req.onsuccess = function (e) {
+                db = this.result;
+
+                var transaction = db.transaction(DB_STORE_NAME, "readonly");
+                var objectStore = transaction.objectStore(DB_STORE_NAME);
+                var getUserRequest = objectStore.get(Number(userId));
+
+                getUserRequest.onsuccess = function (event) {
+                    var user = event.target.result;
+
+                    document.getElementById('username').textContent = user.firstname + ' ' + user.lastname;
+                    document.getElementById('user-avatar').src = `images/${user.userAvatar}.png`; 
+                    console.log('Valor de user.userAvatar:', user.userAvatar);
+                };
+
+                getUserRequest.onerror = function (event) {
+                    console.error("Error getting user data:", event);
+                };
+            };
+
+            req.onerror = function (e) {
+                console.error("Error opening DB:", e.target.errorCode);
+            };
+
+            var transaction = db.transaction(DB_STORE_NAME, "readonly");
+            var objectStore = transaction.objectStore(DB_STORE_NAME);
+            var getAllUsersRequest = objectStore.getAll();
+
+            getAllUsersRequest.onsuccess = function (event) {
+                var users = event.target.result;
+                var userList = document.getElementById('user-list');
+
+                users.forEach(function (user) {
+                    var row = document.createElement('tr');
+                    row.innerHTML = `<td>${user.id}</td>
+                                     <td>${user.firstname}</td>
+                                     <td>${user.lastname}</td>
+                                     <td>${user.email}</td>`;
+                    userList.appendChild(row);
+                });
+            };
+
+            getAllUsersRequest.onerror = function (event) {
+                console.error("Error getting users data:", event);
+                // Muestra un mensaje de error en la página
+                var errorDiv = document.createElement('div');
+                errorDiv.classList.add('alert', 'alert-danger');
+                errorDiv.textContent = 'Error al obtener datos de usuarios.';
+                document.body.appendChild(errorDiv);
+            };
+        });
+    </script>
+</body>
+</html>
